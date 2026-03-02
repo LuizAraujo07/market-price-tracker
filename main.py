@@ -11,7 +11,7 @@ from processador import processar_pdf_com_modelo
 load_dotenv() #ok
 SERVER_API_HOST = os.getenv("SERVER_API_HOST")
 CHAVE_TELEGRAM = os.getenv("CHAVE_TELEGRAM")
-USUARIOS_AUTORIZADOS = [int(os.getenv("USUARIO_LUIZ"))]  # IDs dos usuários autorizados a usar o bot
+USUARIOS_AUTORIZADOS = [int(os.getenv("USUARIO_1"))]
 lms.configure_default_client(SERVER_API_HOST)
 
 modelo = "google/gemma-3-4b"
@@ -23,7 +23,7 @@ bot = telebot.TeleBot(CHAVE_TELEGRAM)
 chat = lms.Chat()
 chat.add_system_prompt(prompito)
 
-# Decorador para verificar autorização
+
 def auditorada(func):
     """Decorador para verificar se o usuário está autorizado"""
     def wrapper(message):
