@@ -10,7 +10,7 @@ from processador import processar_pdf_com_modelo
 #O código inclui tratamento de mensagens de texto, fotos e documentos PDF, respondendo de acordo com o tipo de conteúdo recebido.
 
 
-load_dotenv() #ok
+load_dotenv()
 SERVER_API_HOST = os.getenv("SERVER_API_HOST")
 CHAVE_TELEGRAM = os.getenv("CHAVE_TELEGRAM")
 USUARIOS_AUTORIZADOS = [int(os.getenv("USUARIO_1"))]

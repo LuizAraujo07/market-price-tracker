@@ -2,8 +2,18 @@ import lmstudio as lms
 from duckling import conversor_pdf_simples
 from a_gente import agente_simples
 
-# model = lms.llm("google/gemma-3-4b")
-# caminho_pdf = "documents/nota1.pdf"
+model = lms.llm("qwen/qwen3-8b")
+caminho_pdf = "documents/nota1.pdf"
+
+
+def remove_thinking_tags(text):
+    """Remove tags <think> de forma simples"""
+    while '<think>' in text and '</think>' in text:
+        start = text.find('<think>')
+        end = text.find('</think>') + len('</think>')
+        text = text[:start] + text[end:]
+
+    return text.strip()
 
 def processar_pdf_com_modelo(caminho_pdf, model):
     """
@@ -18,13 +28,14 @@ def processar_pdf_com_modelo(caminho_pdf, model):
 2. **Padronização:** Use o formato de data DD/MM/AAAA. Se o valor unitário não estiver explícito, calcule-o dividindo o valor total pela quantidade. Local de compra é o estabelecimento. nome do produto não vem com o código.
 3. **Dados Ausentes:** Caso alguma informação não esteja disponível, preencha a célula com "N/A".
 4. **Restrição:** Responda **apenas** com a tabela, sem introduções ou comentários adicionais.
+5. **Formato de Resposta:** Forneça a tabela em formato csv para garantir a compatibilidade.
 """
     
-    resultado_markdown = conversor_pdf_simples(caminho_pdf, extrair_imagens=True)
-    print("PDF convertido para Markdown com sucesso.")
-    print("Documento convertido para Markdown:\n********************************")
-    print(f"\n\n{resultado_markdown}\n********************************\n\n")
-    resposta = agente_simples(prompt, resultado_markdown, model)
+    resultado_csv = conversor_pdf_simples(caminho_pdf, extrair_imagens=True)
+    print("PDF convertido para CSV com sucesso.")
+    print("Documento convertido para CSV:\n********************************")
+    print(f"\n\n{resultado_csv}\n********************************\n\n")
+    resposta = agente_simples(prompt, resultado_csv, model)
     print("Resposta do modelo gerada com sucesso.")
     
 
@@ -67,8 +78,9 @@ def processar_texto_tabela1(texto_tabela, model):
 * Gere exclusivamente uma tabela Markdown com as colunas: `Produto`, `Quantidade_Total`, `Unidade_Medida`, `Preco_Pago`, `Data_Compra`.
 
 
+5. **Restrição Estrita:** Não adicione saudações, explicações ou qualquer texto fora da tabela solicitada. Responda **apenas** com a tabela processada.
 
-**Restrição Estrita:** Não adicione saudações, explicações ou qualquer texto fora da tabela solicitada. Responda **apenas** com a tabela processada.
+6. **Formato de Resposta:** Forneça a tabela em formato csv para garantir a legibilidade e compatibilidade.
     """
     
     resposta = agente_simples(prompt, texto_tabela, model)
@@ -88,9 +100,11 @@ def processar_texto_tabela1(texto_tabela, model):
 
 
 
-# tabela_notas = processar_pdf_com_modelo(caminho_pdf, model)
-# print("Resposta tabela notas:\n********************************")
-# print(f"\n\n{tabela_notas}\n********************************\n\n")
-# tabela_produtos = processar_texto_tabela1(tabela_notas, model)
-# print("Resposta tabela produtos:\n********************************")
-# print(f"\n\n{tabela_produtos}\n********************************\n\n")
+tabela_notas = processar_pdf_com_modelo(caminho_pdf, model)
+tabela_notas = remove_thinking_tags(tabela_notas)
+print("Resposta tabela notas:\n********************************")
+print(f"\n\n{tabela_notas}\n********************************\n\n")
+tabela_produtos = processar_texto_tabela1(tabela_notas, model)
+tabela_produtos = remove_thinking_tags(tabela_produtos)
+print("Resposta tabela produtos:\n********************************")
+print(f"\n\n{tabela_produtos}\n********************************\n\n")
