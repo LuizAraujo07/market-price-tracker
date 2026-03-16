@@ -1,90 +1,63 @@
+import re
 import lmstudio as lms
+from typing import Any
 from duckling import conversor_pdf_simples
 from a_gente import agente_simples
-
-model = lms.llm("qwen/qwen3-8b")
-caminho_pdf = "documents/nota1.pdf"
+from prompts import PROMPT_EXTRAIR_COMPRAS, PROMPT_PROCESSAR_TABELA
 
 
-def remove_thinking_tags(text):
-    """Remove tags <think> de forma simples"""
-    while '<think>' in text and '</think>' in text:
-        start = text.find('<think>')
-        end = text.find('</think>') + len('</think>')
-        text = text[:start] + text[end:]
 
-    return text.strip()
 
-def processar_pdf_com_modelo(caminho_pdf, model):
+
+def remove_thinking_tags(text: str) -> str:
+    """
+    Remove as tags <think> e </think> do texto, bem como quaisquer espaços em branco extras.
+    :param text: O texto do modelo que pode conter as tags de pensamento (string)
+    :return: O texto limpo sem as tags e pensamento (string)
+    """
+    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    return re.sub(r'\s+', ' ', cleaned).strip()
+
+
+def processar_pdf_com_modelo(caminho_pdf: str, model: Any) -> str:
     """
     Docstring for processar_pdf_com_modelo
+
+    envia o documento ao docling para retirada da informação bruta,
+    depois envia o resultado ao modelo com o prompt de extração de compras para organizar os dados em uma tabela csv.
     
     :param caminho_pdf: entrada do path do pdf (string)
-    :param prompito: prompt para o modelo (string)
-    """
-    prompt = """Extraia os dados de compra do texto abaixo e organize-os em uma tabela. Seja estritamente objetivo e siga estas diretrizes:
+    :param model: modelo a ser usado lmstudio (model)
+    :return: resposta do modelo com a tabela processada (string)
 
-1. **Estrutura da Tabela:** Nome do Produto | Valor Total | Quantidade | Unidade de Medida | Valor Unitário | Data da Compra | Local da Compra.
-2. **Padronização:** Use o formato de data DD/MM/AAAA. Se o valor unitário não estiver explícito, calcule-o dividindo o valor total pela quantidade. Local de compra é o estabelecimento. nome do produto não vem com o código.
-3. **Dados Ausentes:** Caso alguma informação não esteja disponível, preencha a célula com "N/A".
-4. **Restrição:** Responda **apenas** com a tabela, sem introduções ou comentários adicionais.
-5. **Formato de Resposta:** Forneça a tabela em formato csv para garantir a compatibilidade.
-"""
+    """
+   
     
-    resultado_csv = conversor_pdf_simples(caminho_pdf, extrair_imagens=True)
-    print("PDF convertido para CSV com sucesso.")
-    print("Documento convertido para CSV:\n********************************")
-    print(f"\n\n{resultado_csv}\n********************************\n\n")
-    resposta = agente_simples(prompt, resultado_csv, model)
-    print("Resposta do modelo gerada com sucesso.")
+    resultado_doc = conversor_pdf_simples(caminho_pdf, extrair_imagens=True)
+    print("Documento processado pelo conversor de PDF com sucesso.")
+    print("Dado extraído do documento:\n********************************")
+    print(f"\n\n{resultado_doc}\n********************************\n\n")
+    resposta = agente_simples(PROMPT_EXTRAIR_COMPRAS, resultado_doc, model)
+    resposta = remove_thinking_tags(resposta)
+    print("**Resposta do modelo gerada com sucesso.**")
     
 
     return resposta
 
 
-
-
-
-
-def processar_texto_tabela1(texto_tabela, model):
+def processar_texto_tabela1(texto_tabela: str, model: Any) -> str:
     """
     Docstring for processar_texto_tabela1
     
     :param texto_tabela: entrada do texto da tabela (string)
     :param model: modelo a ser usado lmstudio (model)
-    """
-    prompt = """**Papel:** Você é um especialista em estruturação de dados e higienização de cadastros de compras.
+    :return: resposta do modelo com a tabela processada (string)
 
-**Objetivo:** Processar uma tabela de compras bruta, normalizando nomes de produtos, unidades de medida e quantidades.
-
-**Instruções de Processamento:**
-
-1. **Extração do Nome (Produto):**
-* Remova marcas, pesos, tamanhos e adjetivos secundários.
-* Mantenha apenas o nome essencial do item (ex: "Arroz", "Feijão", "Macarrão").
-
-
-2. **Padronização de Unidade de Medida:**
-* Identifique o peso/volume mencionado no texto original (ex: 500g, 1kg, 2L).
-* Se a unidade original for "Unidade" mas o produto tiver peso/volume, altere para a unidade de massa ou volume correspondente (**kg**, **L**).
-
-
-3. **Cálculo da Quantidade_Total:**
-* Se a unidade de medida for alterada de "Unidade" para uma medida de peso/volume, multiplique a `Quantidade` original pelo valor unitário extraído da descrição.
-* *Exemplo:* "2 unidades de Macarrão 500g" → `Unidade_Medida`: **kg** | `Quantidade_Total`: **1** (pois 2 * 0.5kg = 1kg).
-
-
-4. **Saída de Dados:**
-* Gere exclusivamente uma tabela Markdown com as colunas: `Produto`, `Quantidade_Total`, `Unidade_Medida`, `Preco_Pago`, `Data_Compra`.
-
-
-5. **Restrição Estrita:** Não adicione saudações, explicações ou qualquer texto fora da tabela solicitada. Responda **apenas** com a tabela processada.
-
-6. **Formato de Resposta:** Forneça a tabela em formato csv para garantir a legibilidade e compatibilidade.
     """
     
-    resposta = agente_simples(prompt, texto_tabela, model)
-    print("Resposta do modelo gerada com sucesso.")
+    resposta = agente_simples(PROMPT_PROCESSAR_TABELA, texto_tabela, model)
+    resposta = remove_thinking_tags(resposta)
+    print("**Resposta do modelo gerada com sucesso.**")
     
     return resposta
 
@@ -99,12 +72,12 @@ def processar_texto_tabela1(texto_tabela, model):
 
 
 
-
-tabela_notas = processar_pdf_com_modelo(caminho_pdf, model)
-tabela_notas = remove_thinking_tags(tabela_notas)
-print("Resposta tabela notas:\n********************************")
-print(f"\n\n{tabela_notas}\n********************************\n\n")
-tabela_produtos = processar_texto_tabela1(tabela_notas, model)
-tabela_produtos = remove_thinking_tags(tabela_produtos)
-print("Resposta tabela produtos:\n********************************")
-print(f"\n\n{tabela_produtos}\n********************************\n\n")
+if __name__ == "__main__":
+    model = lms.llm("qwen/qwen3-8b")
+    caminho_pdf = "documents/nota1.pdf"
+    tabela_notas = processar_pdf_com_modelo(caminho_pdf, model)
+    print("Resposta tabela notas:\n********************************")
+    print(f"\n\n{tabela_notas}\n********************************\n\n")
+    tabela_produtos = processar_texto_tabela1(tabela_notas, model)
+    print("Resposta tabela produtos:\n********************************")
+    print(f"\n\n{tabela_produtos}\n********************************\n\n")

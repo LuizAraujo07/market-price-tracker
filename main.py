@@ -3,6 +3,7 @@ import telebot
 import lmstudio as lms
 from dotenv import load_dotenv
 from processador import processar_pdf_com_modelo
+from processador import remove_thinking_tags
 
 
 #Esse codigo usa modelo gemma e docling para processar pdfs enviados por telegram e responder com os dados extraidos.
@@ -16,7 +17,7 @@ CHAVE_TELEGRAM = os.getenv("CHAVE_TELEGRAM")
 USUARIOS_AUTORIZADOS = [int(os.getenv("USUARIO_1"))]
 lms.configure_default_client(SERVER_API_HOST)
 
-modelo = "google/gemma-3-4b"
+modelo = "qwen/qwen3-8b"
 prompito = "voce é um robo e diz bib e bop no fim da frase."
 
 model = lms.llm(modelo)
@@ -63,10 +64,28 @@ def receptor_foto(message):
         bot.send_message(message.chat.id, "Imagem recebida:")
 
         bot.send_chat_action(message.chat.id, 'typing')
+
+        RESPOSTA_SIM_NOTA = '1'
+        RESPOSTA_NAO_NOTA = '0'
+
+        verific_image = model.respond(f"verifique se a imagem é uma nota fiscal, responda apenas com '{RESPOSTA_SIM_NOTA}' ou '{RESPOSTA_NAO_NOTA}'. {RESPOSTA_SIM_NOTA} para sim, {RESPOSTA_NAO_NOTA} para nao.", images=[image_handle])
+
+
+        if verific_image.strip() == RESPOSTA_SIM_NOTA:
+            bot.send_message(message.chat.id, "Imagem reconhecida como nota fiscal. Processando...")
+            resposta_do_conversor = processar_pdf_com_modelo(local_file_path, model)
+            bot.reply_to(message, resposta_do_conversor)
+
+        elif verific_image.strip() == RESPOSTA_NAO_NOTA:
+            chat.add_user_message("descreva essa imagem", images=[image_handle])
+            resposta = model.respond(chat)
+            resposta = remove_thinking_tags(resposta)
+            chat.add_assistant_response(resposta)
+
+        else:
+            resposta = "Não foi possível determinar o tipo da imagem. Por favor, envie uma nota fiscal ou uma foto clara do produto."
+
         
-        chat.add_user_message("descreva essa imagem", images=[image_handle])
-        resposta = model.respond(chat)  
-        chat.add_assistant_response(resposta)
 
         bot.reply_to(message, resposta)
 
@@ -121,7 +140,8 @@ def resp_llm(message):
         bot.send_chat_action(message.chat.id, 'typing')
 
         chat.add_user_message(message.text)     
-        resposta = model.respond(chat)  
+        resposta = model.respond(chat)
+        resposta = remove_thinking_tags(resposta)
         chat.add_assistant_response(resposta)
         bot.reply_to(message, resposta)
 

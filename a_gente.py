@@ -15,5 +15,6 @@ def agente_simples(prompt, texto, model):
     chat.add_user_message(mensagem_formatada)
 
     resposta = model.respond(chat)
+    resposta = str(resposta)
     chat = ""
     return resposta
