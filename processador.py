@@ -11,24 +11,64 @@ from normalizador import parsear_csv
 
 def remove_thinking_tags(text: str) -> str:
     """
-    Remove as tags <think> e </think> do texto, bem como quaisquer espaços em branco extras.
+    Docstring for remove_thinking_tags
+
+    Remove as tags <think></think> e todo o conteúdo de pensamento entre elas.
     :param text: O texto do modelo que pode conter as tags de pensamento (string)
     :return: O texto limpo sem as tags e pensamento (string)
     """
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    return re.sub(r'\s+', ' ', cleaned).strip()
+    cleaned = re.sub(r'<\|channel>.*?<channel\|>', '', cleaned, flags=re.DOTALL)
+    return cleaned.strip()
 
 
-def procesar_pdf_json(camionho_pdf: str, model: Any) -> str:
+def calcular_preco_por_kg(
+    produto: str,
+    quantidade: float,
+    unidade: str,
+    peso_unitario_g: str,
+    preco_pago: float
+) -> float | None:
     """
-    Docstring for procesar_pdf_json
+    Docstring for calcular_preco_por_kg
+
+    Calcula o preço por kg do produto para permitir comparação justa entre embalagens diferentes.
+    :param produto: nome do produto (string)
+    :param quantidade: quantidade original (float)
+    :param unidade: unidade de medida, ex: "UN", "KG" (string)
+    :param peso_unitario_g: peso unitário em gramas extraído pelo modelo, ou "N/A" (string)
+    :param preco_pago: valor total pago (float)
+    :return: preço por kg (float) ou None se não for possível calcular
+    """
+    try:
+        if unidade.upper() == "KG":
+            # já está em kg, só divide
+            return round(preco_pago / quantidade, 2)
+
+        if unidade.upper() == "UN" and peso_unitario_g != "N/A":
+            peso_kg = float(peso_unitario_g) / 1000
+            quantidade_total_kg = quantidade * peso_kg
+            return round(preco_pago / quantidade_total_kg, 2)
+
+        # UN sem peso conhecido — não é possível calcular
+        print(f"[AVISO] Não foi possível calcular preço/kg para '{produto}' — sem peso unitário.")
+        return None
+
+    except (ValueError, ZeroDivisionError) as e:
+        print(f"[ERRO] Falha ao calcular preço/kg para '{produto}': {e}")
+        return None
+
+
+def processar_pdf_json(caminho_pdf: str, model: Any) -> str:
+    """
+    Docstring for processar_pdf_json
     
-    :param camionho_pdf: entrada do path do pdf (string)
+    :param caminho_pdf: entrada do path do pdf (string)
     :param model: modelo a ser usado lmstudio (model)
     :return: resposta do modelo com a tabela processada (string)
 
     """
-    resultado_doc = conversor_pdf_simples(camionho_pdf, extrair_imagens=False)
+    resultado_doc = conversor_pdf_simples(caminho_pdf, extrair_imagens=False)
     print("Documento processado pelo conversor de PDF com sucesso.")
     print("Dado extraído do documento:\n********************************")
     print(f"\n\n{resultado_doc}\n********************************\n\n")
@@ -55,11 +95,12 @@ def processar_pdf_com_modelo(caminho_pdf: str, model: Any) -> str:
     """
    
     
-    resultado_doc = conversor_pdf_simples(caminho_pdf, extrair_imagens=True)
-    print("Documento processado pelo conversor de PDF com sucesso.")
-    print("Dado extraído do documento:\n********************************")
-    print(f"\n\n{resultado_doc}\n********************************\n\n")
+    resultado_doc = processar_pdf_json(caminho_pdf, model)
+
+    print("iniciando processamento do json para tabela csv...  ")
     resposta = agente_simples(PROMPT_EXTRAIR_COMPRAS, resultado_doc, model)
+    print("Resposta do modelo:\n********************************")
+    print(f"\n\n{resposta}\n********************************\n\n")
     resposta = remove_thinking_tags(resposta)
     print("**Resposta do modelo gerada com sucesso.**")
     
