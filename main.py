@@ -2,8 +2,8 @@ import os
 import telebot
 import lmstudio as lms
 from dotenv import load_dotenv
-from processador import processar_pdf_com_modelo
-from processador import remove_thinking_tags
+from core.processador import processar_pdf_com_modelo
+from core.processador import remove_thinking_tags
 
 
 #Esse codigo usa modelo gemma e docling para processar pdfs enviados por telegram e responder com os dados extraidos.
@@ -17,7 +17,7 @@ CHAVE_TELEGRAM = os.getenv("CHAVE_TELEGRAM")
 USUARIOS_AUTORIZADOS = [int(os.getenv("USUARIO_1"))]
 lms.configure_default_client(SERVER_API_HOST)
 
-modelo = "qwen/qwen3-8b"
+modelo = "google/gemma-4-e2b"
 prompito = "voce é um robo e diz bib e bop no fim da frase."
 
 model = lms.llm(modelo)

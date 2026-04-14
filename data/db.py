@@ -74,7 +74,7 @@ def tabela2_para_tabela3(
     :param local_compra: nome do estabelecimento extraído da nota (string)
     :param db_path: caminho do arquivo SQLite (string)
     """
-    from processador import calcular_preco_por_kg
+    from core.processador import calcular_preco_por_kg
 
     criar_banco(db_path)
     inseridos = 0

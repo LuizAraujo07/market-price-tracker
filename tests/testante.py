@@ -1,7 +1,7 @@
 import lmstudio as lms
 
-from teste import texto_teste1, nota_docling_teste, json_teste1
-from processador import processar_pdf_com_modelo, processar_texto_tabela1, processar_nota_tab1, processar_pdf_json
+from tests.teste import texto_teste1, nota_docling_teste, json_teste1
+from core.processador import processar_pdf_com_modelo, processar_texto_tabela1, processar_nota_tab1, processar_pdf_json
 
 
 
