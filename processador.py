@@ -4,6 +4,7 @@ from duckling import conversor_pdf_simples
 from a_gente import agente_simples
 from prompts import PROMPT_EXTRAIR_COMPRAS, PROMPT_PROCESSAR_TABELA, PROMPT_NOTA_JSON
 from normalizador import parsear_csv
+from db import inserir_tabela_processada
 
 
 
@@ -42,7 +43,7 @@ def calcular_preco_por_kg(
     """
     try:
         if unidade.upper() == "KG":
-            # já está em kg, só divide
+            
             return round(preco_pago / quantidade, 2)
 
         if unidade.upper() == "UN" and peso_unitario_g != "N/A":
@@ -50,7 +51,7 @@ def calcular_preco_por_kg(
             quantidade_total_kg = quantidade * peso_kg
             return round(preco_pago / quantidade_total_kg, 2)
 
-        # UN sem peso conhecido — não é possível calcular
+        
         print(f"[AVISO] Não foi possível calcular preço/kg para '{produto}' — sem peso unitário.")
         return None
 
@@ -59,10 +60,13 @@ def calcular_preco_por_kg(
         return None
 
 
-def processar_pdf_json(caminho_pdf: str, model: Any) -> str:
+def nota_para_json(caminho_pdf: str, model: Any) -> str:
     """
-    Docstring for processar_pdf_json
-    
+    Docstring for nota_para_json
+
+    Recebe o arquivo pdf e processa por ocr para extrair o texto bruto,
+    depois envia o resultado ao modelo com o prompt de extração de compras para organizar os dados em uma tabela json.
+
     :param caminho_pdf: entrada do path do pdf (string)
     :param model: modelo a ser usado lmstudio (model)
     :return: resposta do modelo com a tabela processada (string)
@@ -81,9 +85,9 @@ def processar_pdf_json(caminho_pdf: str, model: Any) -> str:
 
 
 
-def processar_pdf_com_modelo(caminho_pdf: str, model: Any) -> str:
+def tabela1_para_tabela2(caminho_pdf: str, model: Any) -> str:
     """
-    Docstring for processar_pdf_com_modelo
+    Docstring for tabela1_para_tabela2
 
     envia o documento ao docling para retirada da informação bruta,
     depois envia o resultado ao modelo com o prompt de extração de compras para organizar os dados em uma tabela csv.
@@ -108,7 +112,8 @@ def processar_pdf_com_modelo(caminho_pdf: str, model: Any) -> str:
     return resposta
 
 
-def processar_texto_tabela1(texto_tabela: str, model: Any) -> str:
+
+def processar_tab1_tab2(texto_tabela: str, model: Any) -> str:
     """
     Docstring for processar_texto_tabela1
     
@@ -129,20 +134,7 @@ def processar_texto_tabela1(texto_tabela: str, model: Any) -> str:
     
     return tabela_final
 
-def processar_nota_tab1(texto_nota: str, model: Any) -> str:
-    """
-    Docstring for processar_nota_tab1
-    
-    :param texto_nota: entrada do texto da nota (string)
-    :param model: modelo a ser usado lmstudio (model)
-    :return: resposta do modelo com a tabela processada (string)
 
-    """
-    resposta = agente_simples(PROMPT_EXTRAIR_COMPRAS, texto_nota, model)
-    # resposta = remove_thinking_tags(resposta)
-    print("**Resposta do modelo gerada com sucesso.**")
-    
-    return resposta
 
 
 
